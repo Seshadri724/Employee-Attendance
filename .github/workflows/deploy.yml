@@ -60,7 +60,7 @@ jobs:
       - name: Run tests
         working-directory: ./backend
         run: |
-          python -c "from chatbot_service import get_response; print(get_response('hello'))"
+          python -c "from chatbot_service import get_chatbot_response; print(get_chatbot_response('hello'))"
           echo "Backend tests passed!"
 
   # Job 3: Deploy to Vercel (Frontend)
