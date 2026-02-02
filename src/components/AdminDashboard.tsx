@@ -19,13 +19,14 @@ import PerformanceChart from './admin/PerformanceChart';
 import EmployeeManagement from './admin/EmployeeManagement';
 import ReportsView from './admin/ReportsView';
 import VoiceRegistration from './admin/VoiceRegistration';
+import AttendanceManagement from './admin/AttendanceManagement';
 import SupportChatbot from './SupportChatbot';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const { users, attendance, allTasks, performance, refreshData, resetToDemo } = useData();
   const { addNotification } = useNotification();
-  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'reports' | 'voice'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'attendance' | 'reports' | 'voice'>('overview');
 
   const employees = users.filter((u) => u.role === 'employee');
 
@@ -65,9 +66,10 @@ export default function AdminDashboard() {
     }
   };
 
-  const tabs: { id: 'overview' | 'employees' | 'reports' | 'voice'; label: string; icon: typeof TrendingUp }[] = [
+  const tabs: { id: 'overview' | 'employees' | 'attendance' | 'reports' | 'voice'; label: string; icon: typeof TrendingUp }[] = [
     { id: 'overview', label: 'Overview', icon: TrendingUp },
     { id: 'employees', label: 'Employees', icon: Users },
+    { id: 'attendance', label: 'Attendance', icon: Calendar },
     { id: 'reports', label: 'Reports', icon: Award },
     { id: 'voice', label: 'Voice Setup', icon: Settings },
   ];
@@ -282,6 +284,8 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === 'employees' && <EmployeeManagement />}
+
+        {activeTab === 'attendance' && <AttendanceManagement />}
 
         {activeTab === 'reports' && <ReportsView />}
 
