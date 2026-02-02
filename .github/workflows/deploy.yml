@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, demo1]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, demo1]
 
 jobs:
   # Job 1: Test & Build Frontend
@@ -68,7 +68,7 @@ jobs:
     name: Deploy Frontend
     needs: [test-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/demo1'
     
     steps:
       - name: Checkout code
@@ -87,7 +87,7 @@ jobs:
     name: Deploy Backend
     needs: [test-backend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/demo1'
     
     steps:
       - name: Trigger Render Deploy
