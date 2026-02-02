@@ -18,12 +18,14 @@ import EmployeeTable from './admin/EmployeeTable';
 import PerformanceChart from './admin/PerformanceChart';
 import EmployeeManagement from './admin/EmployeeManagement';
 import ReportsView from './admin/ReportsView';
+import VoiceRegistration from './admin/VoiceRegistration';
+import SupportChatbot from './SupportChatbot';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const { users, attendance, allTasks, performance, refreshData, resetToDemo } = useData();
   const { addNotification } = useNotification();
-  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'reports' | 'voice'>('overview');
 
   const employees = users.filter((u) => u.role === 'employee');
 
@@ -63,10 +65,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const tabs = [
+  const tabs: { id: 'overview' | 'employees' | 'reports' | 'voice'; label: string; icon: typeof TrendingUp }[] = [
     { id: 'overview', label: 'Overview', icon: TrendingUp },
     { id: 'employees', label: 'Employees', icon: Users },
     { id: 'reports', label: 'Reports', icon: Award },
+    { id: 'voice', label: 'Voice Setup', icon: Settings },
   ];
 
   return (
@@ -137,10 +140,10 @@ export default function AdminDashboard() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition ${activeTab === tab.id
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
                 <Icon className="w-4 h-4" />
@@ -281,7 +284,12 @@ export default function AdminDashboard() {
         {activeTab === 'employees' && <EmployeeManagement />}
 
         {activeTab === 'reports' && <ReportsView />}
+
+        {activeTab === 'voice' && <VoiceRegistration />}
       </div>
+
+      {/* Support Chatbot */}
+      <SupportChatbot />
     </div>
   );
 }

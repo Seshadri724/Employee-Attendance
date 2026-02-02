@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { User, AttendanceRecord, Task, PerformanceMetrics } from '../types';
 import { demoUsers, attendanceRecords, tasks, performanceMetrics } from '../data/demoData';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { isLateCheckIn, isWeekend } from '../config/appConfig';
 
 interface DataContextType {
   // Users
@@ -9,26 +10,26 @@ interface DataContextType {
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
-  
+
   // Attendance
   attendance: AttendanceRecord[];
   addAttendance: (record: Omit<AttendanceRecord, 'id'>) => void;
   updateAttendance: (id: string, updates: Partial<AttendanceRecord>) => void;
   checkIn: (employeeId: string) => void;
   checkOut: (employeeId: string) => void;
-  
+
   // Tasks
   allTasks: Task[];
   addTask: (task: Omit<Task, 'id'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   submitTask: (id: string) => void;
-  
+
   // Performance
   performance: PerformanceMetrics[];
   updatePerformance: (employeeId: string, metrics: Partial<PerformanceMetrics>) => void;
   calculatePerformance: (employeeId: string) => void;
-  
+
   // Utility
   refreshData: () => void;
   resetToDemo: () => void;
@@ -55,7 +56,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser = (id: string, updates: Partial<User>) => {
-    setUsers(prev => prev.map(user => 
+    setUsers(prev => prev.map(user =>
       user.id === id ? { ...user, ...updates } : user
     ));
   };
@@ -78,7 +79,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const updateAttendance = (id: string, updates: Partial<AttendanceRecord>) => {
-    setAttendance(prev => prev.map(record => 
+    setAttendance(prev => prev.map(record =>
       record.id === id ? { ...record, ...updates } : record
     ));
   };
@@ -86,10 +87,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const checkIn = (employeeId: string) => {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
 
     // Check if already checked in today
@@ -101,14 +102,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return; // Already checked in
     }
 
-    // Determine status based on time (assuming 9:00 AM is standard)
-    const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 0);
-    
+    // Use configurable late check-in logic
+    const isLate = isLateCheckIn(now);
+
     const newRecord: AttendanceRecord = {
       id: generateId(),
       employeeId,
       date: today,
       checkIn: timeString,
+      checkInTimestamp: now.toISOString(), // Store ISO for accurate calculation
       status: isLate ? 'late' : 'present',
     };
 
@@ -118,21 +120,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const checkOut = (employeeId: string) => {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
 
     setAttendance(prev => prev.map(record => {
       if (record.employeeId === employeeId && record.date === today && !record.checkOut) {
-        const checkInTime = new Date(`${today} ${record.checkIn}`);
+        // Use stored timestamp if available, otherwise fall back to parsing
+        let checkInTime: Date;
+        if (record.checkInTimestamp) {
+          checkInTime = new Date(record.checkInTimestamp);
+        } else {
+          // Fallback for old records without timestamp
+          checkInTime = new Date(`${today} ${record.checkIn}`);
+        }
         const checkOutTime = now;
         const hoursWorked = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
-        
+
         return {
           ...record,
           checkOut: timeString,
+          checkOutTimestamp: now.toISOString(),
           hoursWorked: Math.round(hoursWorked * 100) / 100,
         };
       }
@@ -150,7 +160,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    setAllTasks(prev => prev.map(task => 
+    setAllTasks(prev => prev.map(task =>
       task.id === id ? { ...task, ...updates } : task
     ));
   };
@@ -161,10 +171,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const submitTask = (id: string) => {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
 
     updateTask(id, {
@@ -177,40 +187,51 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const calculatePerformance = (employeeId: string) => {
     const userAttendance = attendance.filter(record => record.employeeId === employeeId);
     const userTasks = allTasks.filter(task => task.employeeId === employeeId);
-    
+
     const totalDays = userAttendance.length;
-    const presentDays = userAttendance.filter(record => 
+    const presentDays = userAttendance.filter(record =>
       record.status === 'present' || record.status === 'late'
     ).length;
-    
+
     const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
     const tasksCompleted = userTasks.filter(task => task.status === 'completed').length;
-    
-    const totalHours = userAttendance.reduce((sum, record) => 
+
+    const totalHours = userAttendance.reduce((sum, record) =>
       sum + (record.hoursWorked || 0), 0
     );
     const averageHoursWorked = totalDays > 0 ? Math.round((totalHours / totalDays) * 10) / 10 : 0;
-    
-    // Calculate streak (consecutive present days)
+
+    // Calculate streak (consecutive working days, skipping weekends)
     const sortedAttendance = userAttendance
       .filter(record => record.status === 'present' || record.status === 'late')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
+
     let streak = 0;
-    const today = new Date();
+    let checkDate = new Date();
+
+    // Start from yesterday if today hasn't been checked in yet
+    if (!sortedAttendance.some(r => r.date === checkDate.toISOString().split('T')[0])) {
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
     for (const record of sortedAttendance) {
-      const recordDate = new Date(record.date);
-      const daysDiff = Math.floor((today.getTime() - recordDate.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysDiff === streak) {
+      // Skip weekends when counting streak
+      while (isWeekend(checkDate)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+
+      const expectedDate = checkDate.toISOString().split('T')[0];
+      if (record.date === expectedDate) {
         streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
       } else {
         break;
       }
     }
-    
+
     const performanceScore = Math.round(
-      (attendanceRate * 0.4) + 
-      (Math.min(tasksCompleted * 2, 40) * 0.3) + 
+      (attendanceRate * 0.4) +
+      (Math.min(tasksCompleted * 2, 40) * 0.3) +
       (Math.min(averageHoursWorked * 5, 30) * 0.3)
     );
 
@@ -233,7 +254,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const updatePerformance = (employeeId: string, metrics: Partial<PerformanceMetrics>) => {
-    setPerformance(prev => prev.map(perf => 
+    setPerformance(prev => prev.map(perf =>
       perf.employeeId === employeeId ? { ...perf, ...metrics } : perf
     ));
   };

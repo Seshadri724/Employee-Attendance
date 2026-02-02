@@ -1,0 +1,8 @@
+numpy==1.26.4
+speechbrain==0.5.16
+huggingface_hub<0.17
+sounddevice
+soundfile
+scipy
+pandas
+requests

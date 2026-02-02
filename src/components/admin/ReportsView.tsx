@@ -1,10 +1,13 @@
-import { Download, Users, Calendar, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { Download, Users, Calendar, TrendingUp, Cloud } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { exportToCSV } from '../../utils/exportUtils';
+import { fetchTodayAttendance } from '../../api/attendance';
 
 export default function ReportsView() {
     const { users, attendance, performance } = useData();
     const employees = users.filter((u) => u.role === 'employee');
+    const [loadingLive, setLoadingLive] = useState(false);
 
     const handleExportAttendance = () => {
         const exportData = attendance.map((record) => {
@@ -40,6 +43,23 @@ export default function ReportsView() {
         exportToCSV(exportData, `Performance_Report_${new Date().toISOString().split('T')[0]}`);
     };
 
+    const handleDownloadTodayLive = async () => {
+        setLoadingLive(true);
+        try {
+            const data = await fetchTodayAttendance();
+            if (!data || data.length === 0) {
+                alert('No live attendance records found for today.');
+                return;
+            }
+            exportToCSV(data, `Live_Attendance_${new Date().toISOString().split('T')[0]}`);
+        } catch (err) {
+            console.error('Failed to fetch live attendance:', err);
+            alert('Failed to fetch live data. Check your Supabase credentials in .env');
+        } finally {
+            setLoadingLive(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -47,7 +67,15 @@ export default function ReportsView() {
                     <h3 className="text-xl font-bold text-gray-900">Reports & Analytics</h3>
                     <p className="text-sm text-gray-600">Export and analyze organization-wide data</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={handleDownloadTodayLive}
+                        disabled={loadingLive}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-sm disabled:opacity-50"
+                    >
+                        <Cloud className="w-4 h-4" />
+                        {loadingLive ? 'Fetching...' : "Download Today's Report (Live)"}
+                    </button>
                     <button
                         onClick={handleExportAttendance}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm"
@@ -143,8 +171,8 @@ export default function ReportsView() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <span className={`px-2 py-1 rounded text-xs font-bold ${(metric?.performanceScore || 0) >= 90 ? 'bg-green-100 text-green-700' :
-                                                    (metric?.performanceScore || 0) >= 80 ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-orange-100 text-orange-700'
+                                                (metric?.performanceScore || 0) >= 80 ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-orange-100 text-orange-700'
                                                 }`}>
                                                 {metric?.performanceScore.toFixed(1) || 0}
                                             </span>

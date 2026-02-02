@@ -5,21 +5,19 @@ import {
   CheckCircle,
   TrendingUp,
   Calendar,
-  Mic,
   ClipboardList,
-  Award,
   Flame,
-  Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import CheckInOut from './employee/CheckInOut';
 import TaskSubmission from './employee/TaskSubmission';
 import PerformanceCard from './employee/PerformanceCard';
+import SupportChatbot from './SupportChatbot';
 
 export default function EmployeeDashboard() {
   const { user, logout } = useAuth();
-  const { attendance, allTasks, performance } = useData();
+  const { allTasks, performance } = useData();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -27,14 +25,11 @@ export default function EmployeeDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  const userAttendance = attendance.filter((a) => a.employeeId === user?.id);
   const userTasks = allTasks.filter((t) => t.employeeId === user?.id);
   const userMetrics = performance.find((m) => m.employeeId === user?.id);
 
   const todayDate = new Date().toISOString().split('T')[0];
-  const todayAttendance = userAttendance.find((a) => a.date === todayDate);
   const todayTasks = userTasks.filter(task => task.date === todayDate);
-  const completedTodayTasks = todayTasks.filter(task => task.status === 'completed');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -96,7 +91,7 @@ export default function EmployeeDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
-            <CheckInOut todayAttendance={todayAttendance} />
+            <CheckInOut />
           </div>
           <div className="space-y-6">
             <PerformanceCard metrics={userMetrics} />
@@ -172,13 +167,12 @@ export default function EmployeeDashboard() {
                       </div>
                       <div className="mt-2 flex items-center gap-2">
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            task.status === 'completed'
-                              ? 'bg-green-100 text-green-700'
-                              : task.status === 'in-progress'
+                          className={`text-xs px-2 py-1 rounded-full ${task.status === 'completed'
+                            ? 'bg-green-100 text-green-700'
+                            : task.status === 'in-progress'
                               ? 'bg-blue-100 text-blue-700'
                               : 'bg-gray-100 text-gray-700'
-                          }`}
+                            }`}
                         >
                           {task.status.replace('-', ' ')}
                         </span>
@@ -207,6 +201,9 @@ export default function EmployeeDashboard() {
 
         <TaskSubmission />
       </div>
+
+      {/* Support Chatbot */}
+      <SupportChatbot />
     </div>
   );
 }

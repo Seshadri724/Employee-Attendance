@@ -13,6 +13,8 @@ export interface AttendanceRecord {
   date: string;
   checkIn: string;
   checkOut?: string;
+  checkInTimestamp?: string;  // ISO timestamp for accurate calculation
+  checkOutTimestamp?: string; // ISO timestamp for accurate calculation
   status: 'present' | 'absent' | 'late' | 'half-day';
   hoursWorked?: number;
 }

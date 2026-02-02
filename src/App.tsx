@@ -1,6 +1,7 @@
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './components/Login';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -21,13 +22,15 @@ function AppContent() {
 
 function App() {
   return (
-    <NotificationProvider>
-      <DataProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </DataProvider>
-    </NotificationProvider>
+    <ErrorBoundary>
+      <NotificationProvider>
+        <DataProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </DataProvider>
+      </NotificationProvider>
+    </ErrorBoundary>
   );
 }
 
